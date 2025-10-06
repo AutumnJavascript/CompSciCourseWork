@@ -6,4 +6,4 @@
 # React Router
 /.react-router/
 /build/
-/token
+/.token
