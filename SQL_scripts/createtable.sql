@@ -59,7 +59,7 @@ CREATE TABLE conversation(
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     conversation_title VARCHAR NOT NULL,
     conversation_description VARCHAR,
-    creato_id INTEGER NOT NULL REFERENCES users(user_id)
+    creator_id INTEGER NOT NULL REFERENCES users(user_id)
 );
 
 CREATE TABLE messages(
@@ -85,7 +85,7 @@ CREATE TABLE message_reply(
 
 CREATE TABLE conversation_members(
     conversation_id INTEGER NOT NULL REFERENCES conversation(conversation_id),
-    memeber_id INTEGER NOT NULL REFERENCES users(user_id),
+    member_id INTEGER NOT NULL REFERENCES users(user_id),
     PRIMARY KEY (conversation_id, memeber_id),
     membership VARCHAR DEFAULT 'member',
     time_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -123,7 +123,8 @@ CREATE TABLE comment_reply(
 CREATE TABLE collection_ownership(
     collection_id SERIAL PRIMARY KEY,
     owner_id INTEGER NOT NULL REFERENCES users(user_id),
-    time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    public BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE collection_post(
