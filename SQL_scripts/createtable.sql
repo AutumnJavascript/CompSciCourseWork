@@ -86,7 +86,7 @@ CREATE TABLE message_reply(
 CREATE TABLE conversation_member(
     conversation_id INTEGER NOT NULL REFERENCES conversation(conversation_id),
     member_id INTEGER NOT NULL REFERENCES user(user_id),
-    PRIMARY KEY (conversation_id, memeber_id),
+    PRIMARY KEY (conversation_id, member_id),
     membership VARCHAR DEFAULT 'member',
     time_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
