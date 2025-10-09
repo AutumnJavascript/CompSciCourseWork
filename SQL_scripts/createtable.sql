@@ -13,7 +13,7 @@ CREATE TABLE post(
     user_id INTEGER NOT NULL REFERENCES user(user_id),
     title VARCHAR NOT NULL,
     description text,
-    creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     post_type VARCHAR NOT NULL
 );
 
@@ -123,7 +123,7 @@ CREATE TABLE comment_reply(
 CREATE TABLE collection_ownership(
     collection_id SERIAL PRIMARY KEY,
     owner_id INTEGER NOT NULL REFERENCES user(user_id),
-    time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     public BOOLEAN DEFAULT FALSE
 );
 
@@ -131,5 +131,5 @@ CREATE TABLE collection_post(
     collection_post_id SERIAL PRIMARY KEY,
     collection_id INTEGER NOT NULL REFERENCES collection_ownership(collection_id),
     post_id INTEGER NOT NULL REFERENCES post(post_id),
-    time_created TIMESTAMP  DEFAULT CURRENT_TIMESTAMP
+    created_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP
 );
