@@ -95,6 +95,5 @@ function createHeader() {
 
 const token = "EyJhbGdvcml0aG0iOiJIUzI1NiIsInR5cGUiOiJqd3QifQ.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFyaWFuYSJ9.993af8e079706d7bf0d4142a49ada6f0ca3de8fede3bda61f3e1509cb14d20db"
 const payload = parsejwt(token);
-console.log("\n\n");
 console.log(payload);
-console.log("\n\n");
+

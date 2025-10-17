@@ -8,8 +8,6 @@ import {
 } from "react-router";
 
 
-import "./app.css";
-
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
