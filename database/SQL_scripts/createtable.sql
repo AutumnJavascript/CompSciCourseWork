@@ -1,4 +1,4 @@
-CREATE TABLE user(
+CREATE TABLE users(
     user_id SERIAL PRIMARY KEY,
     username VARCHAR UNIQUE NOT NULL,
     hashed_password VARCHAR NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE user(
 
 CREATE TABLE post(
     post_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES user(user_id),
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
     title VARCHAR NOT NULL,
     description text,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -31,23 +31,23 @@ CREATE TABLE post_media(
 );
 
 CREATE TABLE following(
-    follower_id INTEGER NOT NULL REFERENCES user(user_id),
-    following_id INTEGER NOT NULL REFERENCES user(user_id),
+    follower_id INTEGER NOT NULL REFERENCES users(user_id),
+    following_id INTEGER NOT NULL REFERENCES users(user_id),
     status VARCHAR DEFAULT 'pending',
     PRIMARY KEY (follower_id, following_id)
 );
 
 CREATE TABLE friend(
-    requester_id INTEGER NOT NULL REFERENCES user(user_id),
-    requestee_id INTEGER NOT NULL REFERENCES user(user_id),
+    requester_id INTEGER NOT NULL REFERENCES users(user_id),
+    requestee_id INTEGER NOT NULL REFERENCES users(user_id),
     status VARCHAR DEFAULT 'pending',
     PRIMARY KEY (requester_id, requestee_id)
 );
 
 CREATE TABLE report(
     report_id SERIAL PRIMARY KEY,
-    reporter_id INTEGER NOT NULL REFERENCES user(user_id),
-    reportee_id INTEGER NOT NULL REFERENCES user(user_id),
+    reporter_id INTEGER NOT NULL REFERENCES users(user_id),
+    reportee_id INTEGER NOT NULL REFERENCES users(user_id),
     status VARCHAR DEFAULT 'Pending',
     description text,
     post_id INTEGER REFERENCES post(post_id)
@@ -59,12 +59,12 @@ CREATE TABLE conversation(
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     conversation_title VARCHAR NOT NULL,
     conversation_description VARCHAR,
-    creator_id INTEGER NOT NULL REFERENCES user(user_id)
+    creator_id INTEGER NOT NULL REFERENCES users(user_id)
 );
 
 CREATE TABLE message(
     message_id SERIAL PRIMARY KEY,
-    sender_id INTEGER NOT NULL REFERENCES user(user_id),
+    sender_id INTEGER NOT NULL REFERENCES users(user_id),
     conversation_id INTEGER NOT NULL REFERENCES conversation(conversation_id),
     messagetext TEXT NOT NULL,
     has_media BOOLEAN DEFAULT FALSE
@@ -85,7 +85,7 @@ CREATE TABLE message_reply(
 
 CREATE TABLE conversation_member(
     conversation_id INTEGER NOT NULL REFERENCES conversation(conversation_id),
-    member_id INTEGER NOT NULL REFERENCES user(user_id),
+    member_id INTEGER NOT NULL REFERENCES users(user_id),
     PRIMARY KEY (conversation_id, member_id),
     membership VARCHAR DEFAULT 'member',
     time_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -93,14 +93,14 @@ CREATE TABLE conversation_member(
 
 CREATE TABLE post_like(
     post_id INTEGER NOT NULL REFERENCES post(post_id),
-    user_id INTEGER NOT NULL REFERENCES user(user_id),
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
     PRIMARY KEY (post_id, user_id),
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE user_saved(
     post_id INTEGER NOT NULL REFERENCES post(post_id),
-    user_id INTEGER NOT NULL REFERENCES user(user_id),
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
     PRIMARY KEY (post_id, user_id),
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -108,21 +108,21 @@ CREATE TABLE user_saved(
 CREATE TABLE post_comment(
     comment_id SERIAL PRIMARY KEY,
     post_id INTEGER NOT NULL REFERENCES post(post_id),
-    user_id INTEGER NOT NULL REFERENCES user(user_id),
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE comment_reply(
     reply_id SERIAL PRIMARY KEY,
     comment_id INTEGER NOT NULL REFERENCES post_comment(comment_id),
-    user_id INTEGER NOT NULL REFERENCES user(user_id),
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
     message VARCHAR NOT NULL,
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE collection_ownership(
     collection_id SERIAL PRIMARY KEY,
-    owner_id INTEGER NOT NULL REFERENCES user(user_id),
+    owner_id INTEGER NOT NULL REFERENCES users(user_id),
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     public BOOLEAN DEFAULT FALSE
 );
@@ -133,3 +133,5 @@ CREATE TABLE collection_post(
     post_id INTEGER NOT NULL REFERENCES post(post_id),
     created_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP
 );
+
+

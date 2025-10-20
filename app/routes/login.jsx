@@ -1,7 +1,7 @@
 import { Form, useActionData } from "react-router"
 import "../CSS/style.css"
 
-const host = process.env.host;
+const host = process.env.HOST;
 
 
 export async function action({request}) {
