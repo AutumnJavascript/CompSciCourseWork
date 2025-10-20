@@ -25,6 +25,15 @@ export default function App() {
 
     const fetchResponse = useActionData();
     const [checklist, setChecklist] = useState([0,0,0,0,0,1]);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (fetchResponse == 200) {
+            setError("Register successful");
+        } else if (fetchResponse == 23505) {
+            setError("Username already taken, please pick another one");
+        }
+    },[fetchResponse])
 
     function handlepassword(event) {
         const response = checkpassword(event.target.value);
@@ -33,7 +42,6 @@ export default function App() {
         //  If value is 1 then pass
 
         setChecklist(response);
-        console.log(response);
     }
 
     return <UserProvider.Provider value={checklist}>
@@ -60,7 +68,7 @@ export default function App() {
             <button type="submit">Submit</button>
 
             <div>
-                {fetchResponse ? fetchResponse.message : ""}
+                {error}
             </div>
 
         </Form>

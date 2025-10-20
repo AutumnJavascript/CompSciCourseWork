@@ -35,19 +35,28 @@ export async function testquery() {
 export async function dbRegister(username, password, email) {
 
   const passwordHash = await bcrypt.hash(password, Number(process.env.SALTROUNDS));
-
   const client = await pool.connect();
-  const query = `
+
+  try {
+    const query = `
       insert into users
       (username, hashed_password, email)
       values
       ($1, $2, $3);
-  `;
-  const params = [username, passwordHash, email];
-  const response = await client.query(query, params);
+    `;
+    const params = [username, passwordHash, email];
+    const response = await client.query(query, params);
+    
+    console.log(response);
+    client.release();
 
-  console.log(response);
+    return 200;
 
-  client.release();
+  } catch (error) {
+
+    client.release();
+    if (error.code == 23505) return error.code;
+  }
+
 }
 
