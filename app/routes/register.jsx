@@ -1,7 +1,7 @@
 import { Form, useActionData } from "react-router"
 import "../CSS/style.css"
-import { useEffect, useState, createContext, useContext } from "react"
-import { checkpassword } from "../../modules/passwordcheck";
+import { useEffect, useState, createContext, useRef } from "react"
+import { checkemail, checkpassword, validateusername } from "../../modules/passwordcheck";
 
 const host = process.env.HOST;
 
@@ -10,6 +10,13 @@ const UserProvider = createContext();
 export async function action({request}) {
 
     const formdata = await request.formData();
+    const username = formdata.get("username");
+    const password = formdata.get("password");
+    const email = formdata.get("email");
+
+    if (checkpassword(password).includes(0)) return 401;
+    if (!validateusername(username)) return 401;
+    if (!checkemail(email)) return 401;
 
     const registerRequest = await fetch(host + "api/register", {
         method: "POST",
@@ -17,6 +24,8 @@ export async function action({request}) {
     });
     const response = await registerRequest.json();
 
+    //  Returns 200 if successful
+    //  Returns 23505 if username is not unqiue
     return response;
 }
 
@@ -25,26 +34,36 @@ export default function App() {
 
     const fetchResponse = useActionData();
     const [checklist, setChecklist] = useState([0,0,0,0,0,1]);
-    const [error, setError] = useState("");
+    const [status, setStatus] = useState("");
+    const usernameStatus = useRef(0);
 
     useEffect(() => {
         if (fetchResponse == 200) {
-            setError("Register successful");
+            setStatus("Register successful");
         } else if (fetchResponse == 23505) {
-            setError("Username already taken, please pick another one");
-        }
-    },[fetchResponse])
+            setStatus("Username already taken, please pick another one");
+        } else if (fetchResponse == 401) {
+            setStatus("Please check the details are in the correct format");
+        };
+    },[fetchResponse]);
 
     function handlepassword(event) {
         const response = checkpassword(event.target.value);
         //  Returns an array of checklist requirments
-        //  If value is 0 then fail 
-        //  If value is 1 then pass
-
+        // 0 = fail and 1 = pass
         setChecklist(response);
     }
 
-    return <UserProvider.Provider value={checklist}>
+    function handleusername(username) {
+        const response = validateusername(username);
+        if (response) {
+            usernameStatus.current = 0;
+        } else {
+            usernameStatus.current = 1;
+        }
+    }
+
+    return <>
         <h1>Register page</h1>
 
         <Form className="formelement" method="POST" >
@@ -63,21 +82,22 @@ export default function App() {
                 <input type="text" name="password" onChange={handlepassword} required={true}/>
             </div>
 
-            <Checklist />
+            <Checklist checklist={checklist}/>
 
-            <button type="submit">Submit</button>
+            <button type="submit">
+                Submit
+            </button>
 
             <div>
-                {error}
+                {status}
             </div>
 
         </Form>
-    </UserProvider.Provider> 
+    </> 
 };
 
 
-function Checklist() {
-    const checklist = useContext(UserProvider);
+function Checklist({checklist}) {
 
     const passwordRequirements = [
         "At least 8 characters",

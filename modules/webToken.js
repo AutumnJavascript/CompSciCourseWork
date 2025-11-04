@@ -1,5 +1,4 @@
 import { createHmac } from "crypto";
-import { parse } from "path";
 //  Imports the node:crypto module
 //  contains the HMAC keyed hashing algorithm sub program
 
@@ -24,7 +23,7 @@ export async function createjwt(object) {
     const jwt = encodedHeader + "." + encodedPayload + "." + signature;
     //  A special character to separate the 3 parts of a JWT
 
-    return jwt
+    return jwt;
 }
 
 export function parsejwt(jwt) {
@@ -93,7 +92,7 @@ function createHeader() {
 // let token = await createjwt({user_id: 1, username: "ariana"});
 // console.log(token);
 
-const token = "EyJhbGdvcml0aG0iOiJIUzI1NiIsInR5cGUiOiJqd3QifQ.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFyaWFuYSJ9.993af8e079706d7bf0d4142a49ada6f0ca3de8fede3bda61f3e1509cb14d20db"
-const payload = parsejwt(token);
-console.log(payload);
+// const token = "EyJhbGdvcml0aG0iOiJIUzI1NiIsInR5cGUiOiJqd3QifQ.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFyaWFuYSJ9.993af8e079706d7bf0d4142a49ada6f0ca3de8fede3bda61f3e1509cb14d20db"
+// const payload = parsejwt(token);
+// console.log(payload);
 

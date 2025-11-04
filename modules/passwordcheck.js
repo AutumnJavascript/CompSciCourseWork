@@ -1,5 +1,3 @@
-
-
 export function checkpassword(password) {
     const checklist = [];
 
@@ -9,8 +7,20 @@ export function checkpassword(password) {
     checklist[3] = (!containsLowercase(password)) ? 0 : 1;
     checklist[4] = (!containsSpecialCharacters(password)) ? 0 : 1;
     checklist[5] = (noSpaces(password)) ? 0 : 1;
-
+    
     return checklist;
+}
+
+export function validateusername(username) {
+    const pattern = /[@;:\s%$.]/;
+    const contains = pattern.test(username);
+    return !contains;
+}
+
+export function checkemail(email) {
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contains = pattern.test(email);
+    return contains;
 }
 
 function minCharacterLength(password) {
