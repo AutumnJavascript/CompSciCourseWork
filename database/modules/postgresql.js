@@ -98,10 +98,11 @@ export async function dbLogin({identifiertype, identifier, password}) {
 }
 
 
-export async function postupload(user_id, formdata, savedfilenames) {
+export async function postupload(user_id, formdata, savedfilenames, savedfiletypes) {
 
+  //  Adding entry into post table
   const title = formdata.get("title")
-  const description = formdata.get("title")
+  const description = formdata.get("description")
   const posttype = (savedfilenames.length == 0) ? "text" : "carousel";
   const client = await pool.connect();
 
@@ -111,7 +112,225 @@ export async function postupload(user_id, formdata, savedfilenames) {
     values ($1, $2, $3, $4)
     returning post_id
   `;
-  const queryParams = [user_id, title, description, posttype];
 
-  
+  const queryParams = [user_id, title, description, posttype];
+  const response = await client.query(addPostQuery, queryParams);
+
+
+  //  Adding entries into postmedia table
+  //  The map function will return a new array
+  //  Here the array will contain a part of a SQL statement
+  let postmediaquery = savedfilenames.map((value, index) => {
+
+    // Format: (Post_id , paramterised query placeholder ,  mimetype)
+    return `(${response.rows[0].post_id}, $${index + 1}, '${savedfiletypes[index]}')`
+  }).join(',');
+
+  //  Constructs the full SQL statement
+  const addPostMediaQuery = `
+    insert into post_media (post_id, filename, mimetype)
+    values ${postmediaquery}
+  `;
+
+  await client.query(addPostMediaQuery, savedfilenames);
+  await client.query("COMMIT");
+  client.release();
+}
+
+export async function getPosts(userid) {
+
+  const client = await pool.connect();
+
+  try {
+
+   const postQuery = `
+      select 
+        post.*, 
+        u.username, 
+        (select count(user_id) from post_like where post_id = post.post_id) likecount,
+        exists( select * from post_like pl
+          where 
+            pl.user_id = $1 and pl.post_id = post.post_id
+        ) user_liked
+      from (select * from post limit 3) post
+      left join users u
+        on post.user_id = u.user_id
+      left join post_like pl
+        on post.post_id = pl.post_id
+    `;
+    const postslist = await client.query(postQuery, [userid]);
+    // console.log(postslist.rows);
+
+
+    const postparams = postslist.rows.map((value) => {
+      return `post_id = ${value.post_id}`
+    }).join(" or ");
+    //  post_id = 1 or post_id = 2 ....
+    const postMediaQuery = `
+      select post_media_id, filename, mimetype, post_id
+      from post_media
+      where ${postparams}
+    `;
+
+    const mediafiles = await client.query(postMediaQuery);
+    // console.log(mediafiles.rows);
+
+
+    client.release();
+    return {postslist: postslist.rows, mediafiles: mediafiles.rows};
+
+  } catch (error) {
+    console.log(error);
+  }
+
+}
+
+export async function getPost1() {
+
+  const client = await pool.connect();
+
+  try {
+
+   const fullquery = `
+      select 
+        post.*,
+        pm.post_media_id,
+        pm.filename,
+        pm.mimetype,
+        u.username,
+        count(pl.user_id)
+      from post
+      left join post_media pm
+        on post.post_id = pm.post_id
+      left join users u
+        on post.user_id = u.user_id
+      left join post_like pl
+        on post.post_id = pl.post_id
+      group by post.post_id, pm.post_media_id, u.username
+    `;
+
+    const mediafiles = await client.query(fullquery);
+    console.log(mediafiles.rows)
+
+    client.release();
+    return mediafiles.rows;
+
+  } catch (error) {
+    console.log(error);
+  }
+
+}
+
+export async function likepost(userid, postid) {
+
+  const client = await pool.connect();
+  await client.query("BEGIN");
+  let returnresponse = {};
+
+  const likedquery = `
+    select * from post_like
+    where user_id = $1 and post_id = $2
+  `;
+  const likedqueryparams = [userid, postid];
+
+  const likedresponse = await client.query(likedquery, likedqueryparams);
+
+  if (likedresponse.rows.length == 0) {
+    //  not liked yet
+    const addlikequery = `
+      with insert as (
+        insert into post_like (user_id, post_id)
+        values ($1, $2)
+        returning post_id
+      )
+      select count(user_id)
+      from post_like
+      where post_id = (select post_id from insert)
+    `;
+    const addlikeresponse = await client.query(addlikequery, likedqueryparams);
+    returnresponse = {
+      likecount: addlikeresponse.rows[0].count,
+      liked: true
+    };
+  } else {
+    //  already liked
+    const removelikequery = `
+      with remove as (
+        delete from post_like
+        where user_id = $1 and post_id = $2
+        returning post_id
+      )
+      select count(user_id)
+      from post_like
+      where post_id = (select post_id from remove)       
+    `;
+    const removelikeresponse = await client.query(removelikequery, likedqueryparams);
+    returnresponse = {
+      likecount: removelikeresponse.rows[0].count,
+      liked: false
+    };
+  }
+
+  client.query("COMMIT");
+  client.release();
+
+  return returnresponse;
+}
+
+export async function addcomment(userid, postid, comment) {
+
+  const client = await pool.connect();
+
+  try {
+
+    client.query("BEGIN");
+
+   const commentQuery = `
+    with i as (
+      insert into post_comment
+        (post_id, user_id, comment)
+      values
+        ($1, $2, $3)
+      returning *
+    ) 
+    select i.*, u.username
+    from i
+    left join users u 
+      on i.user_id = u.user_id
+    `;
+    const commentQueryParams = [postid, userid, comment];
+    const commentrequest = await client.query(commentQuery, commentQueryParams);
+
+    client.release();
+    return commentrequest.rows[0];
+
+  } catch (error) {
+    console.log(error);
+  }
+
+
+}
+
+export async function getcomments(postid){
+  const client = await pool.connect();
+
+  try {
+
+   const commentQuery = `
+    select pc.*, u.username
+    from post_comment pc
+    left join users u 
+      on pc.user_id = u.user_id
+    where post_id = $1
+    `;
+    const commentrequest = await client.query(commentQuery, [postid]);
+
+    client.release();
+
+    return commentrequest.rows;
+
+  } catch (error) {
+    console.log(error);
+  }
+
 }

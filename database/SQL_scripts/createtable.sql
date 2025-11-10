@@ -109,6 +109,7 @@ CREATE TABLE post_comment(
     comment_id SERIAL PRIMARY KEY,
     post_id INTEGER NOT NULL REFERENCES post(post_id),
     user_id INTEGER NOT NULL REFERENCES users(user_id),
+    comment VARCHAR(512) NOT NULL,
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

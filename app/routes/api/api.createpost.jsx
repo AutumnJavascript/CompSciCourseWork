@@ -2,9 +2,9 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { jwtToken } from "../../../modules/cookies";
 import { parsejwt } from "../../../modules/webToken";
-import { directoryexists, fileexists } from "../../../modules/filehandling";
-import { randomUUID } from "crypto";
+import { directoryexists, fileexists, isImage, isVideo, newUUIDfilename } from "../../../modules/filehandling";
 import { postupload } from "../../../database/modules/postgresql";
+
 
 
 export async function action({request}) {
@@ -15,14 +15,17 @@ export async function action({request}) {
     
     const formdata = await request.formData();
     const files = formdata.getAll("media");
-    const mediapath = path.resolve(import.meta.dirname, "../../..", "media", cookiepayload.username);
+    const mediapath = path.resolve(import.meta.dirname, "../../..", "public", "media", cookiepayload.username);
 
     const exists = await directoryexists(mediapath);
 
     if (!exists) mkdir(mediapath);
-    const savedfilenames = uploadfiles(files, cookiepayload);
+    const {filenamelist, filetype} = await uploadfiles(files, cookiepayload);
 
-    postupload(cookiepayload.user_id, formdata, savedfilenames);
+    // console.log(filenamelist);
+    // console.log(filetype);
+
+    postupload(cookiepayload.user_id, formdata, filenamelist, filetype);
 
     return {ok: true}
 }
@@ -31,27 +34,36 @@ export async function action({request}) {
 async function uploadfiles(files, cookiepayload) {
 
     let filenamelist = [];
+    let filetype = [];
 
     for (const file of files) {
         const filebuffer = await file.arrayBuffer();
         const buffer = Buffer.from(filebuffer);
-        const newpath = path.resolve(import.meta.dirname, "../../..", "media", cookiepayload.username, file.name);
-
+        const newpath = path.resolve(import.meta.dirname, "../../..", "public", "media", cookiepayload.username, file.name);
         const exists = await fileexists(newpath);
 
-        if (!exists) {
-            const writetofile = await writeFile(newpath, buffer);
-            filenamelist.push(file.name);
-        } else {
-            const newdirpath = path.resolve(newpath, "../");
-            const extension = file.name.split(".")[file.name.split(".").length - 1];
-            const newfilename = randomUUID() + "." + extension
-            const writetofile = await writeFile(path.join(newdirpath, newfilename), buffer);
-            filenamelist.push(newfilename);
-        }
+        //  File type check
+        const fileIsImage = await isImage(buffer);
+        const fileIsVideo = await isVideo(buffer);
+
+        //  File must be image or video or it will not be saved
+        if (fileIsImage || fileIsVideo) {
+            if (!exists) {
+                const writetofile = await writeFile(newpath, buffer);
+
+                filenamelist.push(file.name);
+                filetype.push((fileIsImage) ? "image" : "video");
+            } else {
+                const {newfilename, newdirpath} = newUUIDfilename(file.name, newpath);
+
+                const writetofile = await writeFile(path.join(newdirpath, newfilename), buffer);
+                filenamelist.push(newfilename);
+                filetype.push((fileIsImage) ? "image" : "video");
+            }
+        } 
     }
 
-    return filenamelist;
+    return {filenamelist, filetype};
 }
 
 

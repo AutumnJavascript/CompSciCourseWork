@@ -31,7 +31,6 @@ export async function action({request}) {
 export async function loader({request}) {
     const cookieheader = request.headers.get("Cookie");
     const cookie = await jwtToken.parse(cookieheader);
-    
     if (!cookie) {
         //  If there is no cookie
         return redirect("/login");
@@ -52,7 +51,6 @@ export async function loader({request}) {
 export default function App() {
 
     const [hashtaglist, sethashtaglist] = useState([]);
-    const form = useRef();
 
     async function handlesubmit(e) {
         e.preventDefault();
@@ -67,7 +65,7 @@ export default function App() {
     return <>
         <h1>Create post</h1>
 
-        <form className="formelement" onSubmit={handlesubmit} ref={form}>
+        <form className="formelement" onSubmit={handlesubmit}>
             <div>
                 <label htmlFor="title">Title</label>
                 <input type="text" name="title" required={true}/>

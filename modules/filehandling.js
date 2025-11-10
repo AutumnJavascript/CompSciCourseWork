@@ -1,4 +1,7 @@
 import { stat, opendir } from "node:fs/promises";
+import { fileTypeFromBuffer } from "file-type";
+import { randomUUID } from "node:crypto";
+import path from "path";
 
 
 
@@ -43,4 +46,40 @@ export async function fileexists(path) {
         return false;
     }
 }
+
+
+export function getExtension(filename) {
+
+}
+
+export async function isImage(buffer) {
+    const type = await fileTypeFromBuffer(buffer);
+    const check = type.mime.includes("image")
+
+    // if (check) {
+    //     console.log("is image");
+    // }
+
+    return check;
+}
+
+export async function isVideo(buffer) {
+    const type = await fileTypeFromBuffer(buffer);
+    const check = type.mime.includes("video");
+
+    // if (check) {
+    //     console.log("is video");
+    // }
+
+    return check;
+}
+
+export function newUUIDfilename(filename, newpath) {
+    const newdirpath = path.resolve(newpath, "../");
+    const extension = filename.split(".")[filename.split(".").length - 1];
+    const newfilename = randomUUID() + "." + extension;
+
+    return {newfilename, newdirpath};
+}
+
 
