@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-//  Imports the node:crypto module
+//  Imports the crypto module
 //  contains the HMAC keyed hashing algorithm sub program
 
 

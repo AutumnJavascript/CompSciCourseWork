@@ -15,55 +15,6 @@ export async function loader({request}) {
     return a;
 }
 
-
-// export default function App() {
-
-//     const fetchedmedia = useLoaderData();
-//     //  list of all postmedia
-//     const [postlist, setpostlist] = useState([]);
-//     //  ID of all the posts fetched
-//     //  no duplicates
-
-//     useEffect(() => {
-//         //  loops through the database query
-//         //  and appends the postID value to an array
-//         //  ignoring duplicates
-//         let newpostlist = [];
-//         for(const value of fetchedmedia) {
-//             if (!newpostlist.includes(value.post_id)) {
-//                 newpostlist.push(value.post_id);
-//             }
-//         }
-//         setpostlist(newpostlist);
-//     },[fetchedmedia]);
-
-
-//     const posts = useMemo(() => {
-//         return postlist.map((postID) => {
-//             if (!postID) return
-
-//             let filelist = [];
-//             for (const value of fetchedmedia) {
-//                 if (value.post_id == postID) {
-//                     filelist.push(value)
-//                 }
-//             }
-
-//             return <Post 
-//                         data={filelist} 
-//                         key={filelist[0].post_id}>
-//                     </Post>
-//         })
-//     }, [fetchedmedia, postlist])
-
-    
-//     return <>
-//         <h1>Home page</h1>
-
-//         {posts}
-//     </>
-// }
-
 export default function App() {
 
     const {postslist, mediafiles} = useLoaderData();
@@ -85,7 +36,7 @@ export default function App() {
 }
 
 
-function Post({postinfo, mediafiles}) {
+export function Post({postinfo, mediafiles}) {
 
     const [liked, setliked] = useState(postinfo.user_liked);
     const [likecounter, setlikecounter] = useState(Number(postinfo.likecount));

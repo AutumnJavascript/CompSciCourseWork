@@ -60,7 +60,7 @@ export default function App() {
             method: "POST",
             body: formdata,
         });
-    }
+    };
 
     return <>
         <h1>Create post</h1>

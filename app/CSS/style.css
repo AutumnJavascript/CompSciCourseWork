@@ -6,6 +6,11 @@
     width: 20rem;
 }
 
+.profilepic {
+    height: 3rem;
+
+}
+
 .postcontainer {
     display: block;
 }
@@ -20,3 +25,11 @@
     font-size: 1.5rem;
 }
 
+.profilepiccont {
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}

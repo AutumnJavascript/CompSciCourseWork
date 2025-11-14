@@ -5,6 +5,7 @@ export default [
     route("login", "./routes/login.jsx"),
     route("register", "./routes/register.jsx"),
     route("createpost", "./routes/createPost.jsx"),
+    route("user/:userid", "./routes/profile.jsx"),
     route(".well-known/appspecific/com.chrome.devtools.json", "./routes/dev.jsx"),
 
     // api routes
@@ -14,4 +15,5 @@ export default [
     route("api/likepost/:postid", "./routes/api/api.likepost.jsx"),
     route("api/createcomment", "./routes/api/api.createcomment.jsx"),
     route("api/getcomment/:postid", "./routes/api/api.getcomment.jsx"),
+    route("api/uploadprofilepic", "./routes/api/api.uploadprofilepic.jsx"),
 ];

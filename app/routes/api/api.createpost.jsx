@@ -25,7 +25,7 @@ export async function action({request}) {
     // console.log(filenamelist);
     // console.log(filetype);
 
-    postupload(cookiepayload.user_id, formdata, filenamelist, filetype);
+    // postupload(cookiepayload.user_id, formdata, filenamelist, filetype);
 
     return {ok: true}
 }
@@ -49,6 +49,7 @@ async function uploadfiles(files, cookiepayload) {
         //  File must be image or video or it will not be saved
         if (fileIsImage || fileIsVideo) {
             if (!exists) {
+                // console.log(newpath)
                 const writetofile = await writeFile(newpath, buffer);
 
                 filenamelist.push(file.name);

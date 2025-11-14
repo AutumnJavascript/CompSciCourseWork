@@ -2,6 +2,7 @@ import { stat, opendir } from "node:fs/promises";
 import { fileTypeFromBuffer } from "file-type";
 import { randomUUID } from "node:crypto";
 import path from "path";
+import { writeFile, mkdir } from "fs/promises";
 
 
 
@@ -26,16 +27,6 @@ export async function directoryexists(path) {
     }
 }
 
-
-
-//  has callback function
-// export async function fileexists(path, cb) {
-//     //  will return true if file exists
-//     //  and false if file does not exist
-//     stat(path, (err) => {
-//         cb(!err);
-//     });
-// }
 
 //  using promises
 export async function fileexists(path) {
@@ -82,4 +73,37 @@ export function newUUIDfilename(filename, newpath) {
     return {newfilename, newdirpath};
 }
 
+export async function uploadprofilepic(picturefile, cookiepayload) {
+
+    let filenamelist = [];
+    const file = picturefile[0];
+
+    const filebuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(filebuffer);
+    const newpath = path.resolve(import.meta.dirname, "../", "public", "media", cookiepayload.username, "profilepicture", file.name);
+    const exists = await fileexists(newpath);
+
+    //  File type check
+    const fileIsImage = await isImage(buffer);
+
+    //  File must be image or it will not be saved
+    if (fileIsImage) {
+        if (!exists) {
+
+            const writetofile = await writeFile(newpath, buffer);
+            filenamelist.push(file.name);
+
+        } else {
+            const {newfilename, newdirpath} = newUUIDfilename(file.name, newpath);
+            // console.log(newdirpath)
+
+            const writetofile = await writeFile(path.join(newdirpath, newfilename), buffer);
+            filenamelist.push(newfilename);
+
+        }
+    } 
+    
+
+    return filenamelist;
+}
 

@@ -5,7 +5,8 @@ CREATE TABLE users(
     email VARCHAR UNIQUE NOT NULL,
     description VARCHAR,
     role VARCHAR DEFAULT 'user',
-    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    profilepicname VARCHAR
 );
 
 CREATE TABLE post(

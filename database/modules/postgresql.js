@@ -185,42 +185,6 @@ export async function getPosts(userid) {
 
 }
 
-export async function getPost1() {
-
-  const client = await pool.connect();
-
-  try {
-
-   const fullquery = `
-      select 
-        post.*,
-        pm.post_media_id,
-        pm.filename,
-        pm.mimetype,
-        u.username,
-        count(pl.user_id)
-      from post
-      left join post_media pm
-        on post.post_id = pm.post_id
-      left join users u
-        on post.user_id = u.user_id
-      left join post_like pl
-        on post.post_id = pl.post_id
-      group by post.post_id, pm.post_media_id, u.username
-    `;
-
-    const mediafiles = await client.query(fullquery);
-    console.log(mediafiles.rows)
-
-    client.release();
-    return mediafiles.rows;
-
-  } catch (error) {
-    console.log(error);
-  }
-
-}
-
 export async function likepost(userid, postid) {
 
   const client = await pool.connect();
@@ -333,4 +297,90 @@ export async function getcomments(postid){
     console.log(error);
   }
 
+}
+
+export async function getuser(userid) {
+
+  const client = await pool.connect();
+
+  try {
+
+   const userQuery = `
+    select username, description, profilepicname
+    from users 
+    where user_id = $1
+    `;
+    const userrequest = await client.query(userQuery, [userid]);
+
+    client.release();
+
+    return userrequest.rows[0];
+
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function profilepageDB(filename, userid) { 
+  const client = await pool.connect();
+
+  try {
+    const addfilenamequery = `
+      update users
+      set profilepicname = $1
+      where user_id = $2
+    `;
+    const userrequest = await client.query(addfilenamequery, [filename, userid]);
+    client.release();
+
+    return {ok: true};
+
+  } catch (error) {
+
+    console.log(error);
+    return {ok: false};
+  }
+
+}
+
+export async function getuserposts(getuserid, personaluserid) {
+  const client = await pool.connect();
+
+  try {
+
+   const postQuery = `
+      select 
+        post.*, 
+        u.username, 
+        (select count(user_id) from post_like where post_id = post.post_id) likecount,
+        exists( select * from post_like pl
+          where 
+            pl.user_id = $2 and pl.post_id = post.post_id
+        ) user_liked
+      from (select * from post where user_id = $1 limit 3) post
+      left join users u
+        on post.user_id = u.user_id
+      left join post_like pl
+        on post.post_id = pl.post_id
+    `;
+    const postslist = await client.query(postQuery, [getuserid, personaluserid]);
+
+    const postparams = postslist.rows.map((value) => {
+      return `post_id = ${value.post_id}`
+    }).join(" or ");
+    //  post_id = 1 or post_id = 2 ....
+    const postMediaQuery = `
+      select post_media_id, filename, mimetype, post_id
+      from post_media
+      where ${postparams}
+    `;
+    const mediafiles = await client.query(postMediaQuery);
+
+
+    client.release();
+    return {postslist: postslist.rows, mediafiles: mediafiles.rows};
+
+  } catch (error) {
+    console.log(error);
+  }
 }
