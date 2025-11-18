@@ -36,6 +36,7 @@ export default function App() {
     const posts = userposts.postslist.map((value) => {
         return <Post postinfo={value} 
                     mediafiles={userposts.mediafiles} 
+                    hashtaglist={userposts.hashtags}
                     key={value.post_id}
                 ></Post>
     });

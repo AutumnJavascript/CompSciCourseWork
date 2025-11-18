@@ -6,6 +6,7 @@ export default [
     route("register", "./routes/register.jsx"),
     route("createpost", "./routes/createPost.jsx"),
     route("user/:userid", "./routes/profile.jsx"),
+    route("hashtag/:hashtag", "./routes/hashtag.jsx"),
     route(".well-known/appspecific/com.chrome.devtools.json", "./routes/dev.jsx"),
 
     // api routes

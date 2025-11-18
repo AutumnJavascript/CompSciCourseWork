@@ -15,17 +15,14 @@ export async function action({request}) {
     
     const formdata = await request.formData();
     const files = formdata.getAll("media");
+
     const mediapath = path.resolve(import.meta.dirname, "../../..", "public", "media", cookiepayload.username);
 
     const exists = await directoryexists(mediapath);
-
     if (!exists) mkdir(mediapath);
+
     const {filenamelist, filetype} = await uploadfiles(files, cookiepayload);
-
-    // console.log(filenamelist);
-    // console.log(filetype);
-
-    // postupload(cookiepayload.user_id, formdata, filenamelist, filetype);
+    postupload(cookiepayload.user_id, formdata, filenamelist, filetype);
 
     return {ok: true}
 }

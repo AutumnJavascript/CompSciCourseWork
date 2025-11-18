@@ -4,10 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "../CSS/style.css"
 import { jwtToken } from "../../modules/cookies";
 import { parsejwt } from "../../modules/webToken";
+import { Link } from "react-router";
 
 
 export async function loader({request}) {
     const cookieheader = request.headers.get("Cookie");
+    console.log(cookieheader)
     const cookie = await jwtToken.parse(cookieheader);
     const cookiepayload = parsejwt(cookie);
     const a = await getPosts(cookiepayload.user_id);
@@ -17,13 +19,15 @@ export async function loader({request}) {
 
 export default function App() {
 
-    const {postslist, mediafiles} = useLoaderData();
+    const {postslist, mediafiles, hashtags} = useLoaderData();
     //  postslist: list of post information
     //  mediafiles: list of all media files
+    //  hashtags: list of all postid and hashtag pair
 
     const posts = postslist.map((value) => {
         return <Post postinfo={value} 
                     mediafiles={mediafiles} 
+                    hashtaglist={hashtags}
                     key={value.post_id}
                 ></Post>
     });
@@ -36,7 +40,7 @@ export default function App() {
 }
 
 
-export function Post({postinfo, mediafiles}) {
+export function Post({postinfo, mediafiles, hashtaglist}) {
 
     const [liked, setliked] = useState(postinfo.user_liked);
     const [likecounter, setlikecounter] = useState(Number(postinfo.likecount));
@@ -104,6 +108,13 @@ export function Post({postinfo, mediafiles}) {
         }
     }
 
+    let hashtagUI = [];
+    for (const hashtag of hashtaglist) {
+        if (hashtag.post_id != postinfo.post_id) continue;
+        hashtagUI.push(hashtag.hashtag);
+    }
+
+
     return ( 
         <div className="postcontainer">
 
@@ -111,6 +122,11 @@ export function Post({postinfo, mediafiles}) {
             <h2 className="postusername">{postinfo.username}</h2> - <h3 className="posttitle">{postinfo.title}</h3>
             <p>{postinfo.description}</p>
             {mediaelements}
+
+            {hashtagUI.map((value, index) => { return <div key={index}>
+                <Link to={`/hashtag/${value}`}>#{value}</Link>
+            </div>})}
+
 
             {/* interactions */}
             <div>

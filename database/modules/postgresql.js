@@ -97,22 +97,22 @@ export async function dbLogin({identifiertype, identifier, password}) {
   }
 }
 
-
 export async function postupload(user_id, formdata, savedfilenames, savedfiletypes) {
 
   //  Adding entry into post table
-  const title = formdata.get("title")
-  const description = formdata.get("description")
+  const title = formdata.get("title");
+  const description = formdata.get("description");
+  const hashtaglist = formdata.getAll("hashtaglist");
   const posttype = (savedfilenames.length == 0) ? "text" : "carousel";
   const client = await pool.connect();
 
+  //  add post to database
   await client.query("BEGIN");
   const addPostQuery = `
     insert into post (user_id, title, description, post_type)
     values ($1, $2, $3, $4)
     returning post_id
   `;
-
   const queryParams = [user_id, title, description, posttype];
   const response = await client.query(addPostQuery, queryParams);
 
@@ -121,18 +121,26 @@ export async function postupload(user_id, formdata, savedfilenames, savedfiletyp
   //  The map function will return a new array
   //  Here the array will contain a part of a SQL statement
   let postmediaquery = savedfilenames.map((value, index) => {
-
     // Format: (Post_id , paramterised query placeholder ,  mimetype)
     return `(${response.rows[0].post_id}, $${index + 1}, '${savedfiletypes[index]}')`
-  }).join(',');
+  }).join(",");
 
   //  Constructs the full SQL statement
   const addPostMediaQuery = `
     insert into post_media (post_id, filename, mimetype)
     values ${postmediaquery}
   `;
-
   await client.query(addPostMediaQuery, savedfilenames);
+
+  const hashtagquery = hashtaglist.map((value, index) => {
+    return `($${index + 1}, ${response.rows[0].post_id})`
+  }).join(",");
+  const addhashtagquery = `
+    insert into hashtag (hashtag, post_id)
+    values ${hashtagquery}
+  `;
+  await client.query(addhashtagquery, hashtaglist);
+
   await client.query("COMMIT");
   client.release();
 }
@@ -171,13 +179,18 @@ export async function getPosts(userid) {
       from post_media
       where ${postparams}
     `;
-
     const mediafiles = await client.query(postMediaQuery);
     // console.log(mediafiles.rows);
 
+    const postHashtagQuery = `
+      select * 
+      from hashtag
+      where ${postparams}
+    `;
+    const posthashtags = await client.query(postHashtagQuery);
 
     client.release();
-    return {postslist: postslist.rows, mediafiles: mediafiles.rows};
+    return {postslist: postslist.rows, mediafiles: mediafiles.rows, hashtags: posthashtags.rows};
 
   } catch (error) {
     console.log(error);
@@ -376,9 +389,67 @@ export async function getuserposts(getuserid, personaluserid) {
     `;
     const mediafiles = await client.query(postMediaQuery);
 
+    const postHashtagQuery = `
+      select * 
+      from hashtag
+      where ${postparams}
+    `;
+    const posthashtags = await client.query(postHashtagQuery);
 
     client.release();
-    return {postslist: postslist.rows, mediafiles: mediafiles.rows};
+    return {postslist: postslist.rows, mediafiles: mediafiles.rows, hashtags: posthashtags.rows};
+
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function gethashtagposts(hashtag, personaluserid) {
+  const client = await pool.connect();
+
+  try {
+
+   const postQuery = `
+      select 
+        post.*, 
+        u.username, 
+        (select count(user_id) from post_like where post_id = post.post_id) likecount,
+        exists( select * from post_like pl
+          where 
+            pl.user_id = $2 and pl.post_id = post.post_id
+        ) user_liked
+        
+      from (select * from hashtag where hashtag = $1 limit 6) hashtag
+      left join post
+        on hashtag.post_id = post.post_id
+      left join users u
+        on post.user_id = u.user_id
+      left join post_like pl
+        on post.post_id = pl.post_id
+    `;
+    const postslist = await client.query(postQuery, [hashtag, personaluserid]);
+
+
+    const postparams = postslist.rows.map((value) => {
+      return `post_id = ${value.post_id}`
+    }).join(" or ");
+    //  post_id = 1 or post_id = 2 ....
+    const postMediaQuery = `
+      select post_media_id, filename, mimetype, post_id
+      from post_media
+      where ${postparams}
+    `;
+    const mediafiles = await client.query(postMediaQuery);
+
+    const postHashtagQuery = `
+      select * 
+      from hashtag
+      where ${postparams}
+    `;
+    const posthashtags = await client.query(postHashtagQuery);
+
+    client.release();
+    return {postslist: postslist.rows, mediafiles: mediafiles.rows, hashtags: posthashtags.rows};
 
   } catch (error) {
     console.log(error);

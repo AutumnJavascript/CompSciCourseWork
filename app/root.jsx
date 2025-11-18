@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 import { Link } from "react-router";
+import "./CSS/style.css"
 
 
 export const links = () => [
@@ -32,19 +33,33 @@ export function Layout({ children }) {
         <Links />
       </head>
       <body>
-        <div className="sidebar">
-          <nav>
-            <div className="navcontainer">
-              <Link to="/"></Link>
-              <Link to="/"></Link>
-              <Link to="/"></Link>
-              <Link to="/"></Link>
+        <div className="app">
+          <div className="sidebar">
+            <div className="itemcontainer">
+              <div className="logocontainer">
+                <div className="logo"></div>
+                <div className="websitename"></div>
+              </div>
+              <div className="searchcontainer">
+                <input type="text" name="" id="" placeholder="search" className="searchinput"/>
+              </div>
+              <nav>
+                <div className="navcontainer">
+                  <Link to="/">home</Link>
+                  <Link to="/login">login</Link>
+                  <Link to="/register">register</Link>
+                  <Link to="/createpost">create post</Link>
+                  <Link to="/user/2">example profile</Link>
+                </div>
+              </nav>
             </div>
-          </nav>
+          </div>
+          <div className="content">
+            {children}
+          </div>
+          <ScrollRestoration />
+          <Scripts />
         </div>
-        {children}
-        <ScrollRestoration />
-        <Scripts />
       </body>
     </html>
   );
