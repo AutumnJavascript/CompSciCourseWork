@@ -4,29 +4,39 @@ import "../CSS/style.css";
 import { jwtToken } from "../../modules/cookies";
 import { parsejwt } from "../../modules/webToken";
 import { Post } from "./index.jsx";
+import { useState } from "react";
 
 export async function loader({request, params}) {
-
     const cookieheader = request.headers.get("Cookie");
-    const cookie = await jwtToken.parse(cookieheader);
-    const cookiepayload = parsejwt(cookie);
 
+    //  logged in
+    if (cookieheader) {
+        const cookie = await jwtToken.parse(cookieheader);
+        const cookiepayload = parsejwt(cookie);
+        const ownprofile = (params.userid == cookiepayload.user_id);
+
+        const userinfo = await getuser(params.userid, cookiepayload.user_id);
+        const userposts = await getuserposts(params.userid, cookiepayload.user_id);
+
+        return {userinfo, userposts, userid: params.userid, ownprofile};
+    } 
+
+    //  not logged in
     const userinfo = await getuser(params.userid);
-    const userposts = await getuserposts(params.userid, cookiepayload.user_id);
-
-    // console.log(userposts);
-
-    return {userinfo, userposts};
+    const userposts = await getuserposts(params.userid);
+    return {userinfo, userposts, userid: params.userid, ownprofile: false};
 }
 
 export default function App() {
 
-    const {userinfo, userposts} = useLoaderData();
+    const {userinfo, userposts, userid, ownprofile} = useLoaderData();
+    const [followed, setFollowed] = useState(userinfo.followed);
+    const [followercount, setfollowercount] = useState(Number(userinfo.followercount));
 
     async function handlesubmit(e) {
+        if (!ownprofile) return;
         e.preventDefault();
         const formdata = new FormData(e.target);
-
         const request = await fetch("/api/uploadprofilepic", {
             method: "POST",
             body: formdata,
@@ -41,6 +51,18 @@ export default function App() {
                 ></Post>
     });
 
+    async function handlefollow() {
+        if (ownprofile) return;
+        const request = await fetch(`/api/follow/${userid}`, {
+            method: "post",
+        });
+        const response = await request.json();
+        if (response.ok) {
+            setFollowed(response.followed);
+            setfollowercount((response.followed) ? followercount + 1 : followercount - 1);            
+        }
+    }
+
     return <div>
 
         {userinfo && <div>
@@ -54,15 +76,20 @@ export default function App() {
             </div>
             <h2>{userinfo.username}</h2>
             <p>{userinfo.description}</p>
+            <p>Followers: {followercount}</p>
         </div>}
 
-        <form className="formelement" onSubmit={handlesubmit}>
+        {!ownprofile && <button onClick={handlefollow}>
+            {(followed) ? "unfollow" : "follow"}
+        </button>}
+
+        {ownprofile && <form className="formelement" onSubmit={handlesubmit}>
             <h2>Change profile picture</h2>
             <div>
                 <input type="file" name="picture" accept="image/*"/>
             </div>
             <button type="submit">Submit</button>
-        </form>
+        </form>}
 
         {posts}
 

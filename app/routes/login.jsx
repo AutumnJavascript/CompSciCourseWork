@@ -1,11 +1,24 @@
-import { Form, useActionData } from "react-router"
+import { Form, useActionData, useLoaderData } from "react-router"
 import "../CSS/style.css"
 import { useEffect, useState } from "react"
 import { jwtToken } from "../../modules/cookies";
-import { createjwt } from "../../modules/webToken";
+import { createjwt, verifyjwt } from "../../modules/webToken";
 
 const host = process.env.HOST;
 
+export async function loader({request}) {
+    const cookieheader = request.headers.get("Cookie");
+    const cookie = await jwtToken.parse(cookieheader);
+    if (!cookie) {
+        //  If there is no cookie
+        return {loggedin: false};
+
+    } else if (!verifyjwt(cookie)) {
+        //  cookie invalid
+        return {loggedin: false};
+    }
+    return {loggedin: true};
+};
 
 export async function action({request}) {
 
@@ -42,6 +55,7 @@ export default function App() {
 
     const fetchResponse = useActionData();
     const [error, setError] = useState("");
+    const {loggedin} = useLoaderData();
 
     useEffect(() => {
         if (fetchResponse == 200) {
@@ -50,6 +64,12 @@ export default function App() {
             setError("Invalid login details, please try again")
         }
     },[fetchResponse]);
+
+    async function handlelogout() {
+        const request = await fetch("/api/logout", {
+            method: "post"
+        });
+    }
 
     return <>
         <h1>Login page</h1>
@@ -73,6 +93,8 @@ export default function App() {
             </div>
 
         </Form>
+
+        {loggedin && <button onClick={handlelogout}>log out</button>}
     </> 
 };
 

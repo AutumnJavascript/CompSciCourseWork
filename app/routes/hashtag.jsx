@@ -6,16 +6,17 @@ import { parsejwt } from "../../modules/webToken";
 import { Post } from "./index.jsx";
 
 export async function loader({request, params}) {
-
     const cookieheader = request.headers.get("Cookie");
-    const cookie = await jwtToken.parse(cookieheader);
-    const cookiepayload = parsejwt(cookie);
 
-    // const userinfo = await getuser(params.hashtag);
-    const userposts = await gethashtagposts(params.hashtag, cookiepayload.user_id);
+    if (cookieheader) {
+        const cookie = await jwtToken.parse(cookieheader);
+        const cookiepayload = parsejwt(cookie);
 
-    // console.log(userposts);
+        const userposts = await gethashtagposts(params.hashtag, cookiepayload.user_id);
+        return {...userposts, pagehashtag: params.hashtag};
+    }
 
+    const userposts = await gethashtagposts(params.hashtag);
     return {...userposts, pagehashtag: params.hashtag};
 }
 

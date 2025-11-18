@@ -43,6 +43,7 @@ export async function dbRegister(username, password, email) {
       (username, hashed_password, email)
       values
       ($1, $2, $3);
+      returning user_id
     `;
     const params = [username, passwordHash, email];
     const response = await client.query(query, params);
@@ -50,12 +51,12 @@ export async function dbRegister(username, password, email) {
     console.log(response);
     client.release();
 
-    return 200;
+    return {code: 200, userid: response.rows[0].user_id};
 
   } catch (error) {
 
     client.release();
-    if (error.code == 23505) return error.code;
+    if (error.code == 23505) return {code: error.code};
   }
 
 }
@@ -159,7 +160,8 @@ export async function getPosts(userid) {
         exists( select * from post_like pl
           where 
             pl.user_id = $1 and pl.post_id = post.post_id
-        ) user_liked
+        ) user_liked,
+        u.profilepicname
       from (select * from post limit 3) post
       left join users u
         on post.user_id = u.user_id
@@ -167,7 +169,6 @@ export async function getPosts(userid) {
         on post.post_id = pl.post_id
     `;
     const postslist = await client.query(postQuery, [userid]);
-    // console.log(postslist.rows);
 
 
     const postparams = postslist.rows.map((value) => {
@@ -312,21 +313,24 @@ export async function getcomments(postid){
 
 }
 
-export async function getuser(userid) {
-
+export async function getuser(profileid, vistorid) {
   const client = await pool.connect();
 
   try {
-
    const userQuery = `
-    select username, description, profilepicname
-    from users 
+    select username, description, profilepicname,
+      exists(select * from following
+            where follower_id = $2 and following_id = $1) followed,
+      count(f.follower_id) followercount
+    from users u
+    left join following f
+      on f.following_id = user_id
     where user_id = $1
+    group by u.username, u.description, u.profilepicname
     `;
-    const userrequest = await client.query(userQuery, [userid]);
+    const userrequest = await client.query(userQuery, [profileid, vistorid]);
 
     client.release();
-
     return userrequest.rows[0];
 
   } catch (error) {
@@ -369,7 +373,8 @@ export async function getuserposts(getuserid, personaluserid) {
         exists( select * from post_like pl
           where 
             pl.user_id = $2 and pl.post_id = post.post_id
-        ) user_liked
+        ) user_liked,
+         u.profilepicname
       from (select * from post where user_id = $1 limit 3) post
       left join users u
         on post.user_id = u.user_id
@@ -417,8 +422,8 @@ export async function gethashtagposts(hashtag, personaluserid) {
         exists( select * from post_like pl
           where 
             pl.user_id = $2 and pl.post_id = post.post_id
-        ) user_liked
-        
+        ) user_liked,
+        u.profilepicname
       from (select * from hashtag where hashtag = $1 limit 6) hashtag
       left join post
         on hashtag.post_id = post.post_id
@@ -454,4 +459,59 @@ export async function gethashtagposts(hashtag, personaluserid) {
   } catch (error) {
     console.log(error);
   }
+}
+
+export async function followuser(followerid, followingid) {
+
+  const client = await pool.connect();
+  await client.query("BEGIN");
+  let returnresponse = {};
+
+  const followquery = `
+    select * from following
+    where follower_id = $1 and following_id = $2
+  `;
+  const followqueryresponse = await client.query(followquery, [followerid, followingid]);
+
+  if (followqueryresponse.rows.length == 0) {
+    //  not followed yet
+    const addfollowquery = `
+      with insert as (
+        insert into following (follower_id, following_id)
+        values ($1, $2)
+        returning following_id
+      )
+      select count(follower_id)
+      from following
+      where following_id = (select follower_id from insert)
+    `;
+    const addfollowresponse = await client.query(addfollowquery, [followerid, followingid]);
+    returnresponse = {
+      followercount: addfollowresponse.rows[0].count,
+      followed: true
+    };
+
+  } else {
+    //  already followed
+    const removefollowquery = `
+      with remove as (
+        delete from following
+        where follower_id = $1 and following_id = $2
+        returning following_id
+      )
+      select count(follower_id)
+      from following
+      where following_id = (select follower_id from remove)     
+    `;
+    const removefollowresponse = await client.query(removefollowquery, [followerid, followingid]);
+    returnresponse = {
+      followercount: removefollowresponse.rows[0].count,
+      followed: false
+    };
+  }
+
+  client.query("COMMIT");
+  client.release();
+
+  return returnresponse;
 }

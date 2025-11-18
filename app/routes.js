@@ -11,10 +11,12 @@ export default [
 
     // api routes
     route("api/login", "./routes/api/api.login.jsx"),
+    route("api/logout", "./routes/api/api.logout.jsx"),
     route("api/register", "./routes/api/api.register.jsx"),
     route("api/createpost", "./routes/api/api.createpost.jsx"),
     route("api/likepost/:postid", "./routes/api/api.likepost.jsx"),
     route("api/createcomment", "./routes/api/api.createcomment.jsx"),
     route("api/getcomment/:postid", "./routes/api/api.getcomment.jsx"),
     route("api/uploadprofilepic", "./routes/api/api.uploadprofilepic.jsx"),
+    route("api/follow/:userid", "./routes/api/api.follow.jsx"),
 ];

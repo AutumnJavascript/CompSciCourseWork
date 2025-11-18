@@ -22,11 +22,16 @@ export async function action({request}) {
         method: "POST",
         body: formdata
     });
-    const response = await registerRequest.json();
+    const {code, jwt} = await registerRequest.json();
 
     //  Returns 200 if successful
     //  Returns 23505 if username is not unqiue
-    return response;
+    return new Response(code, {
+            headers: {
+                "Set-Cookie": await jwtToken.serialize(jwt)
+            }
+        }
+    );
 }
 
 
