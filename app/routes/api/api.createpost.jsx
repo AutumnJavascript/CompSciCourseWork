@@ -6,7 +6,6 @@ import { directoryexists, fileexists, isImage, isVideo, newUUIDfilename } from "
 import { postupload } from "../../../database/modules/postgresql";
 
 
-
 export async function action({request}) {
 
     const cookieheader = request.headers.get("Cookie");
@@ -20,6 +19,8 @@ export async function action({request}) {
 
     const exists = await directoryexists(mediapath);
     if (!exists) mkdir(mediapath);
+
+    // console.log(cookiepayload)
 
     const {filenamelist, filetype} = await uploadfiles(files, cookiepayload);
     postupload(cookiepayload.user_id, formdata, filenamelist, filetype);

@@ -2,6 +2,7 @@ import { Form, useActionData } from "react-router"
 import "../CSS/style.css"
 import { useEffect, useState, createContext, useRef } from "react"
 import { checkemail, checkpassword, validateusername } from "../../modules/passwordcheck";
+import { jwtToken } from "../../modules/cookies";
 
 const host = process.env.HOST;
 

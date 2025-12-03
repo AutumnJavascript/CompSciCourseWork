@@ -1,6 +1,6 @@
-import { redirect, useLoaderData } from "react-router";
+import { redirect } from "react-router";
 import { jwtToken } from "../../modules/cookies";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { verifyjwt } from "../../modules/webToken";
 
 export async function loader({request}) {
@@ -38,6 +38,7 @@ export default function App() {
             body: formdata,
         });
     };
+
 
     function handleaddhashtag(e) {
         e.preventDefault();

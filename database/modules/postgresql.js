@@ -42,23 +42,25 @@ export async function dbRegister(username, password, email) {
       insert into users
       (username, hashed_password, email)
       values
-      ($1, $2, $3);
+      ($1, $2, $3)
       returning user_id
     `;
     const params = [username, passwordHash, email];
     const response = await client.query(query, params);
     
-    console.log(response);
+    // console.log(query)
+    // console.log(params);
+    // console.log(response);
     client.release();
 
     return {code: 200, userid: response.rows[0].user_id};
 
   } catch (error) {
 
+    // console.log(error)
     client.release();
     if (error.code == 23505) return {code: error.code};
   }
-
 }
 
 export async function dbLogin({identifiertype, identifier, password}) {
@@ -133,15 +135,18 @@ export async function postupload(user_id, formdata, savedfilenames, savedfiletyp
   `;
   await client.query(addPostMediaQuery, savedfilenames);
 
-  const hashtagquery = hashtaglist.map((value, index) => {
-    return `($${index + 1}, ${response.rows[0].post_id})`
-  }).join(",");
-  const addhashtagquery = `
-    insert into hashtag (hashtag, post_id)
-    values ${hashtagquery}
-  `;
-  await client.query(addhashtagquery, hashtaglist);
+  if (hashtaglist.length > 0) {
+      const hashtagquery = hashtaglist.map((value, index) => {
+        return `($${index + 1}, ${response.rows[0].post_id})`
+      }).join(",");
+      const addhashtagquery = `
+        insert into hashtag (hashtag, post_id)
+        values ${hashtagquery}
+      `;
+      await client.query(addhashtagquery, hashtaglist);
+  }
 
+  
   await client.query("COMMIT");
   client.release();
 }
@@ -152,6 +157,7 @@ export async function getPosts(userid) {
 
   try {
 
+    const numofpost = 6;
    const postQuery = `
       select 
         post.*, 
@@ -162,12 +168,15 @@ export async function getPosts(userid) {
             pl.user_id = $1 and pl.post_id = post.post_id
         ) user_liked,
         u.profilepicname
-      from (select * from post limit 3) post
+      from (select * from post limit ${numofpost}) post
       left join users u
         on post.user_id = u.user_id
       left join post_like pl
         on post.post_id = pl.post_id
+      order by post.post_id desc
     `;
+      // order by post.post_id
+
     const postslist = await client.query(postQuery, [userid]);
 
 
@@ -365,6 +374,7 @@ export async function getuserposts(getuserid, personaluserid) {
 
   try {
 
+    const numofpost = 10;
    const postQuery = `
       select 
         post.*, 
@@ -375,7 +385,7 @@ export async function getuserposts(getuserid, personaluserid) {
             pl.user_id = $2 and pl.post_id = post.post_id
         ) user_liked,
          u.profilepicname
-      from (select * from post where user_id = $1 limit 3) post
+      from (select * from post where user_id = $1 limit ${numofpost}) post
       left join users u
         on post.user_id = u.user_id
       left join post_like pl
@@ -514,4 +524,58 @@ export async function followuser(followerid, followingid) {
   client.release();
 
   return returnresponse;
+}
+
+
+export async function createconversation(requestfromid, requesttoid) {
+
+  const client = await pool.connect();
+  await client.query("BEGIN");
+
+  try {
+
+    const findconversationquery = `
+      with find as (
+        select cm.conversation_id, cm.member_id
+        from conversation_member cm
+        left join conversation c
+          on cm.conversation_id = c.conversation_id
+        where (cm.member_id = $1 or cm.member_id = $2) and c.isgroupchat = false
+      )
+      select conversation_id, count(*) as count
+      from find
+      group by conversation_id 
+      having count(*) = 2;
+    `;
+
+    const findquery = await client.query(findconversationquery, [requestfromid, requesttoid]);
+
+    if (findquery.rows.length == 0) {
+      //  conversation not initialised yet
+      const addconversation = `
+        insert into conversation
+        (isgroupchat, conversation_title, creator_id)
+        values
+        (false, 'default', $1)
+        returning conversation_id;
+      `;
+      const addquery = await client.query(addconversation, [requestfromid]);
+      const conversation_id = addquery.rows[0].conversation_id;
+
+      const addmembers = `
+        insert into conversation_member
+        (conversation_id, member_id)
+        values
+        ($1, $2),
+        ($1, $3)
+      `;
+      const addmemberquery = client.query(addmembers, [conversation_id, requestfromid, requesttoid]);
+    }
+
+  } catch (error) {
+    console.log(error)
+  }
+
+  client.query("COMMIT");
+  client.release();
 }
