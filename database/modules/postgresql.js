@@ -2,40 +2,29 @@ import pg from "pg"
 import bcrypt from "bcrypt"
 const {Pool} = pg;
 
-const pool = new Pool({
-  user: process.env.DBUSER,
-  password: process.env.PASSWORD,
-  host: process.env.DBHOST,
-  port: process.env.PORT,
-  database: process.env.DATABASE,
-});
 
-export async function testquery() {
+let dbpool = null;
 
-    const client = await pool.connect();
+function getpool() {
+  if (dbpool) {
+    return dbpool;
+  }
 
-    try {
-      const query = `
-          insert into users
-          (username, hashed_password, email)
-          values
-          ('ariana', 'jkd82haksjdeazkf', 'email@email.com');
-      `;
+  dbpool = new Pool({
+    user: process.env.DBUSER,
+    password: process.env.PASSWORD,
+    host: process.env.DBHOST,
+    port: process.env.PORT,
+    database: process.env.DATABASE,
+  });
 
-      const response = await client.query(query);
-
-    } catch (error) {
-      // console.log(error.code)
-    }
-
-    client.release();
-
+  return dbpool;
 }
 
 export async function dbRegister(username, password, email) {
 
   const passwordHash = await bcrypt.hash(password, Number(process.env.SALTROUNDS));
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
     const query = `
@@ -65,7 +54,7 @@ export async function dbRegister(username, password, email) {
 
 export async function dbLogin({identifiertype, identifier, password}) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
     const query = `
@@ -107,7 +96,7 @@ export async function postupload(user_id, formdata, savedfilenames, savedfiletyp
   const description = formdata.get("description");
   const hashtaglist = formdata.getAll("hashtaglist");
   const posttype = (savedfilenames.length == 0) ? "text" : "carousel";
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   //  add post to database
   await client.query("BEGIN");
@@ -153,7 +142,7 @@ export async function postupload(user_id, formdata, savedfilenames, savedfiletyp
 
 export async function getPosts(userid) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
 
@@ -210,7 +199,7 @@ export async function getPosts(userid) {
 
 export async function likepost(userid, postid) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
   await client.query("BEGIN");
   let returnresponse = {};
 
@@ -266,7 +255,7 @@ export async function likepost(userid, postid) {
 
 export async function addcomment(userid, postid, comment) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
 
@@ -299,7 +288,7 @@ export async function addcomment(userid, postid, comment) {
 }
 
 export async function getcomments(postid){
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
 
@@ -323,7 +312,7 @@ export async function getcomments(postid){
 }
 
 export async function getuser(profileid, vistorid) {
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
    const userQuery = `
@@ -348,7 +337,7 @@ export async function getuser(profileid, vistorid) {
 }
 
 export async function profilepageDB(filename, userid) { 
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
     const addfilenamequery = `
@@ -370,7 +359,7 @@ export async function profilepageDB(filename, userid) {
 }
 
 export async function getuserposts(getuserid, personaluserid) {
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
 
@@ -420,7 +409,7 @@ export async function getuserposts(getuserid, personaluserid) {
 }
 
 export async function gethashtagposts(hashtag, personaluserid) {
-  const client = await pool.connect();
+  const client = await getpool().connect();
 
   try {
 
@@ -473,7 +462,7 @@ export async function gethashtagposts(hashtag, personaluserid) {
 
 export async function followuser(followerid, followingid) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
   await client.query("BEGIN");
   let returnresponse = {};
 
@@ -529,7 +518,7 @@ export async function followuser(followerid, followingid) {
 
 export async function createconversation(requestfromid, requesttoid) {
 
-  const client = await pool.connect();
+  const client = await getpool().connect();
   await client.query("BEGIN");
 
   try {
@@ -578,4 +567,170 @@ export async function createconversation(requestfromid, requesttoid) {
 
   client.query("COMMIT");
   client.release();
+}
+
+export async function getDirectConversation(userid, toid) {
+
+  const client = await getpool().connect();
+  await client.query("BEGIN");
+  let conversationid;
+
+  try {
+
+    const findconversationquery = `
+      with find as (
+        select cm.conversation_id, cm.member_id
+        from conversation_member cm
+        left join conversation c
+          on cm.conversation_id = c.conversation_id
+        where (cm.member_id = $1 or cm.member_id = $2) and c.isgroupchat = false
+      )
+      select conversation_id, count(*) as count
+      from find
+      group by conversation_id 
+      having count(*) = 2;
+    `;
+
+    const findquery = await client.query(findconversationquery, [userid, toid]);
+    conversationid = findquery.rows[0].conversation_id
+
+  } catch (error) {
+    console.log(error)
+  }
+
+  client.query("COMMIT");
+  client.release();
+  return conversationid;
+}
+
+export async function getMembersDB(conversationid) {
+  const client = await getpool().connect();
+
+  try {
+    const getmemberquery = `
+      select member_id from conversation_member
+      where conversation_id = $1
+    `;
+    const findquery = await client.query(getmemberquery, [conversationid]);
+
+    client.release();
+    return findquery.rows;
+
+  } catch (error) {
+    console.log(error)
+    client.release();
+  }
+}
+
+export async function addmessage(payload) {
+  const client = await getpool().connect();
+
+  try {
+    const senderid = payload.ownerid;
+    const conversationid = payload.conversationid;
+    const message = payload.messagetext;
+
+    const addmessagequery = `
+      insert into message
+      (sender_id, conversation_id, messagetext)
+      values
+      ($1, $2, $3)
+      returning message_id
+    `;
+    const addmessage = await client.query(addmessagequery, [senderid, conversationid, message]);
+    const messageid = addmessage.rows[0].message_id;
+
+    client.release();
+    return messageid;
+
+  } catch (error) {
+    console.log(error)
+    client.release();
+  }
+}
+
+export async function getmessage(conversationid) {
+  const client = await getpool().connect();
+
+  try {
+    const getmessagequery = `
+      select *  from message
+      where conversation_id = $1
+    `;
+    const findquery = await client.query(getmessagequery, [conversationid]);
+
+    client.release();
+    return findquery.rows;
+
+  } catch (error) {
+    console.log(error)
+    client.release();
+  }
+}
+
+export async function getconversation(memberid) {
+  const client = await getpool().connect();
+
+  try {
+    //  gets the conversation info
+    //  and the lastest message
+    const getconversationquery = `
+      select c.isgroupchat, 
+            c.conversation_id, 
+            c.creator_id, 
+            c.conversation_title,
+            m.messagetext
+
+      from conversation_member cm
+      left join conversation c
+        on cm.conversation_id = c.conversation_id
+      left join lateral (
+        select messagetext
+        from message
+        where conversation_id = c.conversation_id
+        order by message_id desc
+        limit 1
+      ) as m on true
+
+      where cm.member_id = $1
+    `;
+    const findquery = await client.query(getconversationquery, [memberid]);
+
+    const dmlist = findquery.rows.map((conversation, index) => {
+      //  if it is not a group chat
+      if (!conversation.isgroupchat) {
+        return {id: conversation.conversation_id, index};
+      }
+    });
+
+    // if there is a direct message
+    if (dmlist.length != 0) {
+
+      const selectuserid = dmlist.map((user, index) => {
+        return `(conversation_id = $${index + 2} and member_id != $1)`
+      }).join(" or ")
+
+      const getconversationquery = `
+        select cm.member_id, users.profilepicname, users.username
+        from conversation_member cm
+        left join users
+          on users.user_id = member_id
+        where ${selectuserid}
+      `;
+      const dmlistquery = await client.query(getconversationquery, [memberid, ...dmlist.map((id) => id.id)]);
+
+      //  adding the user information with the conversation query result
+      for (const dm in dmlist) {
+        const index = dmlist[dm].index;
+        findquery.rows[index] = {...findquery.rows[index], ...dmlistquery.rows[dm]}
+      }
+    }
+  
+    client.release();
+    return findquery.rows;
+
+  } catch (error) {
+    console.log(error)
+    client.release();
+  }
 }

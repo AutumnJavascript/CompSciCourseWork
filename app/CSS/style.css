@@ -2,7 +2,14 @@ html, body { margin: 0; }
 
 body {
     background-color: hsl(0, 0%, 96%);
+    /* overscroll-behavior: none; */
 }
+
+html, body {
+    height: 100dvh;
+    overflow: hidden;
+}
+
 
 .formelement {
     position: relative;
@@ -66,9 +73,12 @@ body {
     border-radius: 50%;
     width: 2.5rem;
     height: 2.5rem;
+    aspect-ratio: 1;
     overflow: hidden;
     display: inline-flex;
     justify-content: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .messageheaderpfpcontainer {
@@ -138,19 +148,19 @@ body {
     display: flex;
     flex-direction: row;
     column-gap: 0;
-    position: fixed;
     width: 100%;
     height: 100%;
     /* overflow: hidden; */
+    box-sizing: border-box;
+    position: relative;
 }
 
 .content {
     position: relative;
     flex-grow: 1;
     height: 100%;
-    /* background-color: hsl(0, 0%, 95%); */
-    overflow-y: scroll;
     padding: 2rem;
+    overflow: scroll;
 }
 
 .sidebar {
@@ -382,13 +392,15 @@ body {
     border-left: 0px;
     border-top: 0px;
     box-sizing: border-box;
+    overflow: scroll;
 }
 
 .mainmessage {
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     position: relative;
-
+    display: grid;
+    grid-template-rows: 4rem 1fr auto;
 }  
 
 .messageheader {
@@ -421,4 +433,196 @@ body {
 .messageusernamestatus h1 {
     font-size: 1.2rem;
     margin: 0;
+}
+
+.toolbar {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* background-color: blueviolet; */
+    display: flex;
+    align-items: flex-end;
+    box-sizing: border-box;
+    padding: 1.2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.sendmessage {
+    font-family: Arial, Helvetica, sans-serif;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 2.4rem;
+    border-width: 1px;
+    border: 2px solid rgba(79, 79, 79, 0.128);
+    box-sizing: border-box;
+    padding: 1.0rem 9rem 0.2rem 1.4rem;
+    /* padding-top: 0.9rem; */
+    font-size: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.134);
+    transition: ease 0.3s;
+    display: block;
+}
+.sendmessage:focus {
+    border: 2px solid rgba(157, 157, 157, 0.716);
+    outline: 0px;
+    box-shadow: 0 4px 20px rgba(128, 54, 134, 0.247);
+}
+.sendmessage:hover {
+    box-shadow: 0 4px 20px rgba(128, 54, 134, 0.247);
+}
+
+.toolbarbutton {
+    background-color: hsl(0, 0%, 97%);
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    border-width: 1px;
+    border: 1px solid hsl(0, 0%, 80%);
+    box-sizing: border-box;
+}
+
+.toolbarbuttoncontainer {
+    display: flex;
+    flex-direction: row;
+    column-gap: 0.3rem;
+    z-index: 2;
+    position: absolute;
+    /* transform: translate(0%, -50%); */
+    bottom: 1.9rem;
+    right: 2rem;
+
+}
+
+.defaultmessage {
+    font-size: 1.3rem;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 0.5rem;
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+    max-width: 25rem;
+}
+
+.ownmessage {
+    background-color: hsl(329, 58%, 68%);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    align-self: flex-end;
+    color: white;
+}
+
+.notownmessage {
+    background-color: hsl(0, 0%, 87%);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    align-self: flex-start;
+}
+
+.messagedisplay {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    padding: 1.8rem;
+    flex-direction: column;
+    box-sizing: border-box;
+    row-gap: 1rem;
+    overflow-y: scroll;
+}
+
+.messagecardcontainer {
+    width: 100%;
+    height: 4.5rem;
+    /* background-color: red; */
+    display: flex;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    padding-left: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+    column-gap: 0.4rem;
+    border-bottom: 1px solid hsl(0, 0%, 93%);
+    position: relative;
+}
+
+.messagecardcontainer .profilepiccont {
+    border-radius: 50%;
+    width: 2.8rem;
+    height: 2.8rem;
+    overflow: hidden;
+    display: inline-flex;
+    justify-content: center;
+}
+
+.messagecardinfo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, Helvetica, sans-serif;
+    row-gap: 0.1rem;
+    overflow: hidden;
+    width: 100%;
+}
+.messagecardinfo h2 {
+    margin: 0;
+}
+
+.messagecardtitle {
+    font-size: 1.1rem;
+}
+
+.messagecardmessage {
+    font-size: 0.7rem;
+    color: hsl(0, 0%, 30%);
+    font-weight: 200;
+    overflow: hidden;
+    inline-size: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.emptymessagecontainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* height: 100%; */
+    flex-direction: column;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.emptymessagecontainer h1 {
+    font-family: Arial, Helvetica, sans-serif;
+    color: hsl(0, 0%, 50%);
+    font-size: 1rem;
+}
+
+.notification {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    background-color: hsl(270, 59%, 56%);
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0.4rem;
+    color: white;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

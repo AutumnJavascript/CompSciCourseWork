@@ -14,7 +14,7 @@ export async function action({request, params}) {
     const ownprofile = (params.userid == cookiepayload.user_id);
 
     if (ownprofile) return;
-    // await createconversation(cookiepayload.user_id, params.userid);
+    await createconversation(cookiepayload.user_id, params.userid);
 
     return {ok: true};
 }

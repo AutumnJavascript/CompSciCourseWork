@@ -30,19 +30,6 @@ export default function App() {
     //  postslist: list of post information
     //  mediafiles: list of all media files
     //  hashtags: list of all postid and hashtag pair
-    const ws = useRef();
-
-    useEffect(function () {
-        // const url = "ws://127.0.0.1/";
-        // const url = "ws://localhost:3000/";
-        const url = "ws://192.168.1.113:3000/";
-        ws.current = new WebSocket(url);
-
-        ws.current.addEventListener("message", (data) => {
-            console.log(data.data);
-        });
-    },[])
-
 
     const posts = postslist.map((value) => {
         return <Post postinfo={value} 

@@ -29,6 +29,8 @@ export function Layout({ children }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* <meta name="viewport" content="height=100%"/> */}
+        {/* <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0" /> */}
         <Meta />
         <Links />
       </head>
@@ -50,6 +52,7 @@ export function Layout({ children }) {
                   <Link to="/register">register</Link>
                   <Link to="/createpost">create post</Link>
                   <Link to="/user/2">example profile</Link>
+                  <Link to="/messaging">messaging</Link>
                 </div>
               </nav>
             </div>

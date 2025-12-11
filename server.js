@@ -5,11 +5,13 @@ import { WebSocketServer } from "ws";
 import { createServer } from "http";
 import { parsejwt, verifyjwt } from "./modules/webToken.js";
 import { jwtToken } from "./modules/cookies.js";
+import { addmessage, getMembersDB } from "./database/modules/postgresql.js";
 
 // Short-circuit the type-checking of the built output.
 const BUILD_PATH = "./build/server/index.js";
 const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
+const websocketconnections = new Map();
 
 const app = express();
 //  creating http server from express app
@@ -50,6 +52,7 @@ if (DEVELOPMENT) {
 }
 
 
+
 let httpserver = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
@@ -61,16 +64,41 @@ let wss = new WebSocketServer({noServer: true});
 wss.on("connection", (ws, req, cookiepayload) => {
 
   //  save user info with websocket connection
+  websocketconnections.set(cookiepayload.user_id, ws);
   ws.cookiepayload = cookiepayload;
 
   // this function is ran when the client sends a websocket message
-  ws.on("message", function (data) {
-    //  this for each function broadcasts the message to every connected websocket user
-    console.log(ws.cookiepayload);
-    wss.clients.forEach(function (client) {
-      client.send(JSON.parse(data));
-    })
+  ws.on("message", async function (data) {
+    const payload = JSON.parse(data);
+    payload["ownerid"] = ws.cookiepayload.user_id;
+
+    const messageid = await addmessage(payload);
+    payload["message_id"] = messageid;
+
+    //  loops through all members of the group chat
+    const memberlist = await getMembersDB(payload.conversationid);
+    for (const client of memberlist) {
+      //  if user is online
+      if (websocketconnections.has(client.member_id)) {
+        
+        //  if the post is owned by user
+        if (ws.cookiepayload.user_id == client.member_id) {
+
+          payload["owner"] = true;
+        } else {
+          payload["owner"] = false;
+        }
+
+        const userWebsocket = websocketconnections.get(client.member_id);
+        userWebsocket.send(JSON.stringify(payload));
+      }
+    }
   });
+
+  //  when the user disconnects, delete the from the map
+  ws.on("close", () => {
+    websocketconnections.delete(ws.cookiepayload.user_id);
+  })
 });
 
 

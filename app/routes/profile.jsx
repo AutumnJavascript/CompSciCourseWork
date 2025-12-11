@@ -65,7 +65,7 @@ export default function App() {
         }
     }
 
-    async function handlemessage () {
+    async function handlemessage() {
         if (ownprofile) return;
 
         const request = await fetch(`/api/createconversation/${userid}`, {

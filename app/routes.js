@@ -7,7 +7,7 @@ export default [
     route("createpost", "./routes/createPost.jsx"),
     route("user/:userid", "./routes/profile.jsx"),
     route("hashtag/:hashtag", "./routes/hashtag.jsx"),
-    route("messaging/:userid", "./routes/messaging.jsx"),
+    route("messaging/:userid?", "./routes/messaging.jsx"),
     route(".well-known/appspecific/com.chrome.devtools.json", "./routes/dev.jsx"),
 
     // api routes
@@ -21,6 +21,9 @@ export default [
     route("api/uploadprofilepic", "./routes/api/api.uploadprofilepic.jsx"),
     route("api/follow/:userid", "./routes/api/api.follow.jsx"),
     route("api/createconversation/:userid", "./routes/api/api.createconversation.jsx"),
+    route("api/getmessage/:conversationid", "./routes/api/api.getmessage.jsx"),
+    route("api/find", "./routes/api/api.find.jsx"),
+
 
     route("debug", "./routes/debug.jsx"),
 ];
