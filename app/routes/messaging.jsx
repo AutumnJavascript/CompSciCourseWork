@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useContext, createContext } from "react";
+import { useRef, useEffect, useState, useContext, createContext, useMemo } from "react";
 import { jwtToken } from "../../modules/cookies";
 import { verifyjwt, parsejwt } from "../../modules/webToken";
 import { createconversation, getDirectConversation, getuser } from "../../database/modules/postgresql";
@@ -42,6 +42,14 @@ export async function loader({params, request}) {
     return {conversations};
 }
 
+function debounce(cb, delay) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => cb(...args), delay);
+    }
+}
+
 export default function App() {
 
     const ws = useRef();
@@ -55,10 +63,17 @@ export default function App() {
     const currentconversationref = useRef();
     const bottommessage = useRef();
     const [render, rerender] = useState(false);
+    const [searchresult, setSearchresult] = useState([]);
+    const messageparams = useRef(null);
+    const [highlighted, setHighlighted] = useState(null);
+
+    const messageidlist = useMemo(() => {
+        return conversations.map((conversation) => conversation.conversation_id);
+    },[conversations])
 
     useEffect(() => {
         currentconversationref.current = currentconversation;
-    },[currentconversation]);
+    },[currentconversation])
 
     useEffect(() => {
         // const url = "ws://192.168.1.113:3000/";
@@ -69,17 +84,20 @@ export default function App() {
         //  and this client receives the data
         ws.current.addEventListener("message", (data) => {
             const message = JSON.parse(data.data);
-            console.log(message)
 
             //  user receives message to a conversation not present on screen
             if (message.conversationid != currentconversationref.current) {
-                // force rerender
                 
+                //  adds new message to the message list
+                //  and increments the notification count
                 conversationmessages.current = {...conversationmessages.current, 
                     [message.conversationid]: {
                         messagelist: [...conversationmessages.current[message.conversationid].messagelist, message],
                         lastmessage: message,
-                        notificationCount: conversationmessages.current[message.conversationid].notificationCount + 1
+                        notificationCount: conversationmessages.current[message.conversationid].notificationCount + 1,
+                        groupchat: conversationmessages.current[message.conversationid].groupchat,
+                        cname: conversationmessages.current[message.conversationid].cname,
+                        uname: conversationmessages.current[message.conversationid].uname
                 }}
                 rerender(!render);
 
@@ -89,7 +107,10 @@ export default function App() {
                     [message.conversationid]: {
                         messagelist: [...conversationmessages.current[message.conversationid].messagelist, message],
                         lastmessage: message,
-                        notificationCount: conversationmessages.current[message.conversationid].notificationCount
+                        notificationCount: conversationmessages.current[message.conversationid].notificationCount,
+                        groupchat: conversationmessages.current[message.conversationid].groupchat,
+                        cname: conversationmessages.current[message.conversationid].cname,
+                        uname: conversationmessages.current[message.conversationid].uname
                 }}
             }
         });
@@ -98,10 +119,12 @@ export default function App() {
             conversationmessages.current[conversation.conversation_id] = {
                 messagelist: [],
                 lastmessage: conversation,
-                notificationCount: 0
+                notificationCount: 0,
+                groupchat: conversation.isgroupchat,
+                cname: conversation.conversation_title,
+                uname: conversation.username
             }
         }
-
 
         return () => {
             ws.current.close();
@@ -109,7 +132,7 @@ export default function App() {
     },[]);
 
     useEffect(() => {
-
+        console.log("a")
         if (!currentconversation) return;
         if (conversationmessages.current[currentconversation].messagelist.length != 0) {
             const info = findusername(currentconversation, conversations);
@@ -123,6 +146,7 @@ export default function App() {
         })
         .then(response => response.json())
         .then(data => {
+            console.log(data);
             setMessagelist(data.messageslist);
             const info = findusername(currentconversation, conversations);
             setUserinfo({username: info.username, profilepicname: info.profilepicname});
@@ -130,13 +154,19 @@ export default function App() {
                 [currentconversation]: {
                     messagelist: data.messageslist,
                     lastmessage: data.messageslist[data.messageslist.length - 1],
-                    notificationCount: 0
+                    notificationCount: 0,
+                    groupchat: conversationmessages.current[data.conversationid].groupchat,
+                    cname: conversationmessages.current[data.conversationid].cname,
+                    uname: conversationmessages.current[data.conversationid].uname
             }}
         });
     },[currentconversation])
 
     useEffect(() => {
-        if (bottommessage.current) {
+        if (messageparams.current && document.getElementById(messageparams.current)) {
+            bottommessage.current.scrollTop = document.getElementById(messageparams.current).offsetTop - 80;
+            messageparams.current = null;
+        } else if (bottommessage.current) {
             bottommessage.current.scrollTop = bottommessage.current.scrollHeight;
         }
     },[userinfo, messagelist])
@@ -178,19 +208,28 @@ export default function App() {
         conversationmessages.current[id].notificationCount = 0;
     }
 
-    async function handleinput(e) {
-        console.log(e.target.value)
+    const handleinput = debounce((e) => {
+        if (!e.target.value.trim()) return;
         fetch("/api/find", {
             method: "post",
             body: JSON.stringify({
                 category: "message",
-                text: e.target.value.trim()
+                text: e.target.value.trim(),
+                list: messageidlist
             })
         })
         .then(response => response.json())
         .then((data) => {
             console.log(data);
+            setSearchresult(data);
         })
+    }, 700);
+
+    function viewmessage(conversationid, messageid) {
+        messageparams.current = messageid;
+        setCurrentConversation(conversationid);
+        conversationmessages.current[conversationid].notificationCount = 0;
+        setHighlighted(messageid);
     }
 
     return <UserProvider value={conversationmessages}>
@@ -199,8 +238,22 @@ export default function App() {
                 <div className="messagetopbar">
                     <p>Messages</p>
                     <div className="messagesearchcontainer">
-                        <input type="text" placeholder="Search..." onInput={handleinput}/>
-                        <svg className="searchsvg" xmlns="http://www.w3.org/2000/svg" style={{width: "1.2rem"}} viewBox="0 0 640 640"><path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z"/></svg>
+                        <div className="searchandresult">
+                            <div className="searchinputcontainer">
+                                <input type="text" placeholder="Search..." onInput={handleinput}/>
+                                <svg className="searchsvg" xmlns="http://www.w3.org/2000/svg" style={{width: "1.2rem"}} viewBox="0 0 640 640"><path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z"/></svg>
+                            </div>
+                            <div className="resultscontainer">
+                                {searchresult && searchresult.map && searchresult.map((result) => { 
+                                    return <div style={{zIndex: 2}} key={result.message_id} onPointerDown={() => {viewmessage(result.conversation_id, result.message_id)}}>
+                                        <h3 className="resultconversation">{(conversationmessages.current[result.conversation_id].isgroupchat) ?
+                                            conversationmessages.current[result.conversation_id].cname:
+                                            conversationmessages.current[result.conversation_id].uname}</h3>
+                                        <h4 className="resulttext">{result.messagetext}</h4>
+                                    </div>
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="messagecardlist">
@@ -209,6 +262,7 @@ export default function App() {
                         conversation={conversation} 
                         handleclick={handleclick} 
                         conversationmessages={conversationmessages} 
+                        active={conversation.conversation_id == currentconversation}
                         key={conversation.conversation_id}/>
                     })}
                 </div>
@@ -229,7 +283,11 @@ export default function App() {
                         </div>
                     </div>
                     <div className="messagedisplay" ref={bottommessage}>
-                        {messagelist.map((message) => <Message message={message} key={message.message_id} conversationmessages={conversationmessages}/>)}
+                        {messagelist.map((message) => <Message 
+                            message={message} 
+                            key={message.message_id} 
+                            conversationmessages={conversationmessages}
+                            highlighted={highlighted == message.message_id}/>)}
                     </div>
                     <div className="toolbar">
 
@@ -277,17 +335,16 @@ function findusername(conversationid, conversations) {
     }
 }
 
-function MessageCard({conversation, handleclick}) {
+function MessageCard({conversation, handleclick, active}) {
 
     const conversationmessages = useContext(UserProvider);
-
-    useEffect(() => {
-        console.log(conversationmessages.current)
-    },[]);
-
+    const id = useMemo(() => {
+        return conversation.conversation_id
+    },[])
+    
     return <div 
             key={conversation.conversation_id}
-            className="messagecardcontainer"
+            className={`messagecardcontainer ${(active) ? "active" : ""}`}
             onClick={() => {handleclick(conversation.conversation_id)}}
             >
         <div className="profilepiccont">
@@ -313,23 +370,23 @@ function MessageCard({conversation, handleclick}) {
                 }
             </h2>
         </div>
-            {(conversationmessages.current[conversation.conversation_id]?.notificationCount && conversationmessages.current[conversation.conversation_id]?.notificationCount != 0) ?
+            {(conversationmessages.current[id]?.notificationCount && conversationmessages.current[id]?.notificationCount != 0) ?
                 <div className="notification">
-                    {conversationmessages.current[conversation.conversation_id].notificationCount}
+                    {conversationmessages.current[id].notificationCount}
                 </div> : 
                 ""
             }
     </div>
 }
 
-function Message({message}) {
+function Message({message, highlighted}) {
 
     if (message.owner) {
-        return <div className="ownmessage defaultmessage">
+        return <div className={`ownmessage defaultmessage ${(highlighted) ? "highlightedmessage" : ""}`} id={message.message_id}>
             {message.messagetext}
         </div>;
     }
-    return <div className="notownmessage defaultmessage">
+    return <div className={`notownmessage defaultmessage ${(highlighted) ? "highlightedmessage" : ""}`} id={message.message_id}>
         {message.messagetext}
     </div>;
 

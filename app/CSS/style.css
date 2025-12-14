@@ -346,6 +346,7 @@ html, body {
     box-sizing: border-box;
     border: 2px solid rgba(79, 79, 79, 0.128);
     border-left: 0px;
+    z-index: 4;
 }
 .messagetopbar p {
     margin: 0;
@@ -357,7 +358,7 @@ html, body {
 .messagetopbar input {
     margin: 0;
     width: 100%;
-    height: 1.9rem;
+    height: 100%;
     border-radius: 1.9rem;
     font-size: 1rem;
     outline: 2px solid hsl(0, 0%, 93%);
@@ -365,6 +366,16 @@ html, body {
     padding: 0.5rem;
     border: 0;
     padding-left: 1.7rem;
+}
+
+.searchinputcontainer {
+    margin: 0;
+    width: 100%;
+    height: 1.9rem;
+    box-sizing: border-box;
+    border: 0;
+    padding: 0;
+    position: relative;
 }
 
 .messagesearchcontainer {
@@ -519,6 +530,12 @@ html, body {
     color: white;
 }
 
+.highlightedmessage {
+    -webkit-box-shadow: 0px 4px 38px 1px rgb(209, 142, 251);
+    -moz-box-shadow: 0px 4px 38px 1px rgb(209, 142, 251);
+    box-shadow: 0px 4px 38px 1px rgb(209, 142, 251);
+}
+
 .notownmessage {
     background-color: hsl(0, 0%, 87%);
     border-top-left-radius: 1rem;
@@ -553,6 +570,10 @@ html, body {
     position: relative;
 }
 
+.messagecardcontainer.active {
+    background-color: hsl(0, 0%, 92%);
+}
+
 .messagecardcontainer .profilepiccont {
     border-radius: 50%;
     width: 2.8rem;
@@ -578,6 +599,7 @@ html, body {
 .messagecardtitle {
     font-size: 1.1rem;
 }
+
 
 .messagecardmessage {
     font-size: 0.7rem;
@@ -625,4 +647,37 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.searchandresult {
+    width: 100%;
+    height: fit-content;
+    border-radius: 1rem;
+    outline: 2px solid hsl(0, 0%, 93%);
+    overflow: scroll;
+}
+
+.resultscontainer {
+    width: 100%;
+    height: fit-content;
+    padding: 0.4rem;
+    box-sizing: border-box;
+    z-index: 3;
+    display: none;
+    background-color: #f3fcff;
+}
+
+.resultconversation {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.resulttext {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 400;
+}
+
+.searchinputcontainer:focus-within + .resultscontainer {
+    display: block;
 }

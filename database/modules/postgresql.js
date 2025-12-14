@@ -654,7 +654,7 @@ export async function getmessage(conversationid) {
 
   try {
     const getmessagequery = `
-      select *  from message
+      select * from message
       where conversation_id = $1
     `;
     const findquery = await client.query(getmessagequery, [conversationid]);
@@ -728,6 +728,30 @@ export async function getconversation(memberid) {
   
     client.release();
     return findquery.rows;
+
+  } catch (error) {
+    console.log(error)
+    client.release();
+  }
+}
+
+export async function searchMessage(idlist, text) {
+  const client = await getpool().connect();
+
+  try {
+    const pattern = `%${text}%`;
+    const searchquery = idlist.map((value, index) => { 
+      return ` conversation_id = $${index + 2}`
+    }).join(" or");
+
+    const searchmessagequery = `
+      select * from message
+      where (${searchquery}) and messagetext ilike $1
+    `;
+    const messages = await client.query(searchmessagequery, [pattern, ...idlist]);
+
+    client.release();
+    return messages.rows;
 
   } catch (error) {
     console.log(error)
